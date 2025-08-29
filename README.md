@@ -1,5 +1,9 @@
 # ChordLibre
 
+<p align="center">
+  <img src="ChordLibre/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="ChordLibre App Icon" width="128" height="128">
+</p>
+
 A PDF chord chart manager for live performance.
 
 ## What it does
