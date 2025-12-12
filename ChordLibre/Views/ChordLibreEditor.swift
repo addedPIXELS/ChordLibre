@@ -128,6 +128,7 @@ struct ChordLibreEditor: View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("Lyrics", text: $song.sections[sectionIndex].lines[lineIndex].lyrics, axis: .vertical)
                 .font(.body)
+                .autocorrectionDisabled()
 
             HStack {
                 TextField("Chord (optional)", text: Binding(
@@ -146,6 +147,7 @@ struct ChordLibreEditor: View {
                 ))
                 .font(.body)
                 .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
 
                 if song.sections[sectionIndex].lines[lineIndex].chord != nil {
                     Image(systemName: "checkmark.circle.fill")
@@ -200,10 +202,12 @@ struct MetadataEditor: View {
             Form {
                 Section("Basic Info") {
                     TextField("Title", text: $song.title)
+                        .textInputAutocapitalization(.words)
                     TextField("Artist", text: Binding(
                         get: { song.artist ?? "" },
                         set: { song.artist = $0.isEmpty ? nil : $0 }
                     ))
+                    .textInputAutocapitalization(.words)
                 }
 
                 Section("Musical Details") {
