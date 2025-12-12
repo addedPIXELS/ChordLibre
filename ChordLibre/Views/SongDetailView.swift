@@ -26,7 +26,9 @@ struct SongDetailView: View {
     let onDismiss: (() -> Void)?
     @EnvironmentObject var dataStore: DataStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+    @State private var shareItem: URL?
+    @State private var showingShareSheet = false
+
     init(song: Song, onPerform: @escaping () -> Void, onDismiss: (() -> Void)? = nil) {
         self.song = song
         self.onPerform = onPerform
@@ -159,21 +161,60 @@ struct SongDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if horizontalSizeClass == .regular, let onDismiss = onDismiss {
-                    Button("Done") {
-                        onDismiss()
+                HStack {
+                    // Share button for ChordLibre sheets
+                    if song.isChordLibreSheet {
+                        Button {
+                            shareChordsheet()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
                     }
-                    .foregroundColor(.accentColor)
-                } else {
-                    EmptyView()
+
+                    if horizontalSizeClass == .regular, let onDismiss = onDismiss {
+                        Button("Done") {
+                            onDismiss()
+                        }
+                        .foregroundColor(.accentColor)
+                    }
                 }
             }
         }
+        .sheet(isPresented: $showingShareSheet) {
+            if let url = shareItem {
+                ShareSheet(items: [url])
+            }
+        }
     }
-    
+
+    private func shareChordsheet() {
+        guard let chordLibreSong = song.chordLibreSong else { return }
+
+        do {
+            let url = try ChordLibreExporter.shared.exportChordsheet(chordLibreSong)
+            shareItem = url
+            showingShareSheet = true
+        } catch {
+            print("Error exporting chordsheet: \(error)")
+        }
+    }
+
     private func formatDuration(_ seconds: Int32) -> String {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
+}
+
+// MARK: - ShareSheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

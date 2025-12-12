@@ -29,6 +29,9 @@ struct SetlistDetailView: View {
     @State private var refreshTrigger = UUID()
     @State private var selectedSongIndex: Int?
     @State private var showingSetlistPerformance = false
+    @State private var shareItem: URL?
+    @State private var isExporting = false
+    @State private var showingShareSheet = false
     
     var body: some View {
         List {
@@ -97,12 +100,60 @@ struct SetlistDetailView: View {
         .navigationTitle(setlist.name ?? "Untitled")
         .navigationBarTitleDisplayMode(.large)
         .environment(\.editMode, $editMode)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack {
+                    Button {
+                        exportSetlist()
+                    } label: {
+                        if isExporting {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                    .disabled(isExporting)
+
+                    Button(editMode == .active ? "Done" : "Edit") {
+                        withAnimation {
+                            editMode = editMode == .active ? .inactive : .active
+                        }
+                    }
+                }
+            }
+        }
         .fullScreenCover(isPresented: $isPerforming) {
             SetlistPerformanceView(setlist: setlist)
         }
         .fullScreenCover(isPresented: $showingSetlistPerformance) {
             SetlistPerformanceView(setlist: setlist, startingSongIndex: selectedSongIndex)
                 .environmentObject(dataStore)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let url = shareItem {
+                ShareSheet(items: [url])
+            }
+        }
+    }
+
+    private func exportSetlist() {
+        isExporting = true
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let url = try ChordLibreExporter.shared.exportSetlist(setlist, dataStore: dataStore)
+
+                DispatchQueue.main.async {
+                    isExporting = false
+                    shareItem = url
+                    showingShareSheet = true
+                }
+            } catch {
+                print("Error exporting setlist: \(error)")
+                DispatchQueue.main.async {
+                    isExporting = false
+                }
+            }
         }
     }
     

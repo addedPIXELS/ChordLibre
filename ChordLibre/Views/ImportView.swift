@@ -161,7 +161,7 @@ struct ImportView: View {
             }
             .fileImporter(
                 isPresented: $showingFilePicker,
-                allowedContentTypes: [.pdf],
+                allowedContentTypes: [.pdf, UTType(filenameExtension: "chordlibre")!],
                 allowsMultipleSelection: true
             ) { result in
                 handleFileImport(result)
@@ -215,25 +215,46 @@ struct ImportView: View {
         switch result {
         case .success(let urls):
             selectedURLs = urls
-            
+
             for url in urls {
                 if url.startAccessingSecurityScopedResource() {
                     defer { url.stopAccessingSecurityScopedResource() }
-                    
-                    do {
-                        let data = try Data(contentsOf: url)
-                        pdfDataList.append((url: url, data: data))
-                        
-                        // Parse filename for title and artist
-                        let filename = url.deletingPathExtension().lastPathComponent
-                        let parsedMetadata = parseFilename(filename)
-                        songMetadata[url] = parsedMetadata
-                    } catch {
-                        importError = error
+
+                    // Check if it's a .chordlibre file
+                    if url.pathExtension == "chordlibre" {
+                        // Import ChordLibre file directly
+                        do {
+                            let chordLibreSong = try ChordLibreExporter.shared.importChordsheet(from: url)
+                            _ = dataStore.createChordLibreSong(chordLibreSong: chordLibreSong)
+                        } catch {
+                            importError = error
+                            print("Error importing chordsheet: \(error)")
+                        }
+                    } else {
+                        // Handle PDF import as before
+                        do {
+                            let data = try Data(contentsOf: url)
+                            pdfDataList.append((url: url, data: data))
+
+                            // Parse filename for title and artist
+                            let filename = url.deletingPathExtension().lastPathComponent
+                            let parsedMetadata = parseFilename(filename)
+                            songMetadata[url] = parsedMetadata
+                        } catch {
+                            importError = error
+                        }
                     }
                 }
             }
-            
+
+            // If we imported chordlibre files, dismiss and refresh
+            if urls.contains(where: { $0.pathExtension == "chordlibre" }) {
+                dataStore.loadSongs()
+                if pdfDataList.isEmpty {
+                    dismiss()
+                }
+            }
+
         case .failure(let error):
             importError = error
         }

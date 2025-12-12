@@ -19,6 +19,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MainView: View {
     @StateObject private var dataStore = DataStore.shared
@@ -26,6 +27,7 @@ struct MainView: View {
     @State private var selectedTab: NavigationTab = .all
     @State private var showingImport = false
     @State private var showingSharedImport = false
+    @State private var showingSetlistImport = false
     @State private var editingChordsheet: ChordLibreSong?
     @State private var editingExistingSong: Song?
     @State private var selectedSong: Song?
@@ -71,6 +73,36 @@ struct MainView: View {
         .fullScreenCover(item: $editingChordsheet) { chordsheet in
             ChordLibreEditor(song: chordsheet, existingSong: editingExistingSong)
                 .environmentObject(dataStore)
+        }
+        .fileImporter(
+            isPresented: $showingSetlistImport,
+            allowedContentTypes: [UTType(filenameExtension: "chordlibresetlist")!],
+            allowsMultipleSelection: false
+        ) { result in
+            handleSetlistImport(result)
+        }
+    }
+
+    private func handleSetlistImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+
+            if url.startAccessingSecurityScopedResource() {
+                defer { url.stopAccessingSecurityScopedResource() }
+
+                do {
+                    let setlist = try ChordLibreExporter.shared.importSetlist(from: url, dataStore: dataStore)
+                    // Navigate to the imported setlist
+                    selectedTab = .setlist(setlist)
+                    selectedSetlist = setlist
+                } catch {
+                    print("Error importing setlist: \(error)")
+                }
+            }
+
+        case .failure(let error):
+            print("Error selecting setlist file: \(error)")
         }
     }
     
@@ -214,10 +246,18 @@ struct MainView: View {
                         Label("New Chordsheet", systemImage: "music.note.list")
                     }
 
+                    Divider()
+
                     Button {
                         createNewSetlist()
                     } label: {
                         Label("New Setlist", systemImage: "plus.rectangle.on.folder")
+                    }
+
+                    Button {
+                        showingSetlistImport = true
+                    } label: {
+                        Label("Import Setlist", systemImage: "square.and.arrow.down.on.square")
                     }
                 } label: {
                     Image(systemName: "plus")
