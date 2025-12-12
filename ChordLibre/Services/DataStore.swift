@@ -173,7 +173,7 @@ class DataStore: ObservableObject {
     func getAllSongs() -> [Song] {
         let request: NSFetchRequest<Song> = Song.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-        
+
         do {
             return try viewContext.fetch(request)
         } catch {
@@ -181,7 +181,26 @@ class DataStore: ObservableObject {
             return []
         }
     }
-    
+
+    func createChordLibreSong(chordLibreSong: ChordLibreSong) -> Song {
+        let song = Song(context: viewContext)
+        song.id = UUID()
+        song.songType = "chordlibre"
+        song.title = chordLibreSong.title
+        song.artist = chordLibreSong.artist
+        song.key = chordLibreSong.key.rawValue
+        song.chordLibreSong = chordLibreSong
+        song.createdAt = Date()
+        song.updatedAt = Date()
+        song.pdfHash = UUID().uuidString // Unique identifier
+        song.pdfData = Data() // Empty data for ChordLibre songs (pdfData is required in schema)
+
+        save()
+        loadSongs()
+
+        return song
+    }
+
     enum SortOption: String, CaseIterable {
         case title = "Title"
         case artist = "Artist"

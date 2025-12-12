@@ -26,6 +26,7 @@ struct MainView: View {
     @State private var selectedTab: NavigationTab = .all
     @State private var showingImport = false
     @State private var showingSharedImport = false
+    @State private var showingChordsheetCreator = false
     @State private var selectedSong: Song?
     @State private var selectedSetlist: Setlist?
     @State private var isPerforming = false
@@ -49,6 +50,10 @@ struct MainView: View {
                     .environmentObject(sharedFileManager)
             }
         }
+        .sheet(isPresented: $showingChordsheetCreator) {
+            ChordsheetCreatorView()
+                .environmentObject(dataStore)
+        }
         .onChange(of: sharedFileManager.hasNewImports) { _, hasNew in
             if hasNew {
                 showingSharedImport = true
@@ -56,7 +61,12 @@ struct MainView: View {
         }
         .fullScreenCover(isPresented: $isPerforming) {
             if let song = selectedSong {
-                PerformanceView(song: song)
+                if song.isChordLibreSheet {
+                    ChordLibreViewer(song: song)
+                        .environmentObject(dataStore)
+                } else {
+                    PerformanceView(song: song)
+                }
             } else if let setlist = selectedSetlist {
                 SetlistPerformanceView(setlist: setlist)
             }
@@ -196,7 +206,13 @@ struct MainView: View {
                     } label: {
                         Label("Import PDF", systemImage: "doc.badge.plus")
                     }
-                    
+
+                    Button {
+                        showingChordsheetCreator = true
+                    } label: {
+                        Label("New Chordsheet", systemImage: "music.note.list")
+                    }
+
                     Button {
                         createNewSetlist()
                     } label: {
