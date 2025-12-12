@@ -88,12 +88,12 @@ struct SettingsView: View {
                 HStack {
                     Text("Version")
                     Spacer()
-                    Text("1.0.0")
+                    Text("1.1.0")
                         .foregroundColor(.secondary)
                 }
-                
-                Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
-                Link("Terms of Service", destination: URL(string: "https://example.com/terms")!)
+
+                Link("Privacy Policy", destination: URL(string: "https://addedpixels.com/chordlibre")!)
+                Link("Terms of Service", destination: URL(string: "https://addedpixels.com/chordlibre")!)
             }
         }
         .navigationTitle("Settings")

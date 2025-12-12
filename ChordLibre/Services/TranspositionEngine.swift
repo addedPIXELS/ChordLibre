@@ -91,6 +91,35 @@ class TranspositionEngine {
         )
     }
 
+    /// Parse and transpose multiple space-separated chords
+    /// - Parameters:
+    ///   - input: Space-separated chord string (e.g., "C G Am")
+    ///   - semitones: Number of semitones to transpose
+    ///   - preferSharps: Whether to prefer sharps over flats
+    /// - Returns: Transposed chord string with same spacing
+    func transposeChordString(_ input: String, semitones: Int, preferSharps: Bool) -> String {
+        // Split on whitespace, preserving spacing
+        let components = input.components(separatedBy: " ")
+
+        let transposedChords = components.map { component in
+            let trimmed = component.trimmingCharacters(in: .whitespaces)
+
+            // Empty components (from multiple spaces) - preserve
+            guard !trimmed.isEmpty else { return component }
+
+            // Try to parse and transpose
+            if let chord = try? parseChord(trimmed) {
+                let transposed = transpose(chord: chord, semitones: semitones, preferSharps: preferSharps)
+                return transposed.displayString
+            } else {
+                // If parsing fails, return original
+                return trimmed
+            }
+        }
+
+        return transposedChords.joined(separator: " ")
+    }
+
     /// Parse the quality/extension/modifications portion of a chord
     /// This is a simplified parser that preserves the full string for now
     private func parseQualityExtension(_ input: String) -> (quality: String?, ext: String?, modifications: String?) {
@@ -226,9 +255,9 @@ class TranspositionEngine {
             var newSection = section
             newSection.lines = section.lines.map { line in
                 var newLine = line
-                if let chord = line.chord {
-                    newLine.chord = transpose(
-                        chord: chord,
+                if let chords = line.chords, !chords.isEmpty {
+                    newLine.chords = transposeChordString(
+                        chords,
                         semitones: semitones,
                         preferSharps: preferSharps
                     )

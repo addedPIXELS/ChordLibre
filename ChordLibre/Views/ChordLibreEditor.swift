@@ -131,27 +131,22 @@ struct ChordLibreEditor: View {
                 .autocorrectionDisabled()
 
             HStack {
-                TextField("Chord (optional)", text: Binding(
+                TextField("Chords (optional, space-separated)", text: Binding(
                     get: {
-                        song.sections[sectionIndex].lines[lineIndex].chord?.displayString ?? ""
+                        song.sections[sectionIndex].lines[lineIndex].chords ?? ""
                     },
                     set: { newValue in
-                        if newValue.isEmpty {
-                            song.sections[sectionIndex].lines[lineIndex].chord = nil
-                        } else {
-                            if let chord = try? TranspositionEngine.shared.parseChord(newValue) {
-                                song.sections[sectionIndex].lines[lineIndex].chord = chord
-                            }
-                        }
+                        let trimmed = newValue.trimmingCharacters(in: .whitespaces)
+                        song.sections[sectionIndex].lines[lineIndex].chords = trimmed.isEmpty ? nil : trimmed
                     }
                 ))
                 .font(.body)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
 
-                if song.sections[sectionIndex].lines[lineIndex].chord != nil {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                if let chords = song.sections[sectionIndex].lines[lineIndex].chords, !chords.isEmpty {
+                    Image(systemName: "music.note")
+                        .foregroundColor(.cyan)
                         .font(.caption)
                 }
             }
@@ -162,13 +157,13 @@ struct ChordLibreEditor: View {
     private func addSection() {
         let newSection = ChordLibreSection(
             label: "New Section",
-            lines: [ChordLibreLine(lyrics: "", chord: nil)]
+            lines: [ChordLibreLine(lyrics: "", chords: nil)]
         )
         song.sections.append(newSection)
     }
 
     private func addLine(toSection index: Int) {
-        let newLine = ChordLibreLine(lyrics: "", chord: nil)
+        let newLine = ChordLibreLine(lyrics: "", chords: nil)
         song.sections[index].lines.append(newLine)
     }
 
@@ -283,11 +278,11 @@ extension View {
         key: .C,
         sections: [
             ChordLibreSection(label: "Verse 1", lines: [
-                ChordLibreLine(lyrics: "Sample lyrics", chord: try? TranspositionEngine.shared.parseChord("C"))
+                ChordLibreLine(lyrics: "Sample lyrics", chords: "C")
             ])
         ]
     )
 
-    return ChordLibreEditor(song: sampleSong)
+    ChordLibreEditor(song: sampleSong)
         .environmentObject(DataStore.shared)
 }

@@ -23,15 +23,17 @@ import SwiftUI
 struct SongDetailView: View {
     let song: Song
     let onPerform: () -> Void
+    let onEdit: (() -> Void)?
     let onDismiss: (() -> Void)?
     @EnvironmentObject var dataStore: DataStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var shareItem: URL?
-    @State private var showingShareSheet = false
+    @State private var showingShareError = false
+    @State private var shareErrorMessage = ""
 
-    init(song: Song, onPerform: @escaping () -> Void, onDismiss: (() -> Void)? = nil) {
+    init(song: Song, onPerform: @escaping () -> Void, onEdit: (() -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.song = song
         self.onPerform = onPerform
+        self.onEdit = onEdit
         self.onDismiss = onDismiss
     }
     
@@ -162,13 +164,23 @@ struct SongDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 HStack {
-                    // Share button for ChordLibre sheets
+                    // Edit and Share buttons for ChordLibre sheets
                     if song.isChordLibreSheet {
+                        if let onEdit = onEdit {
+                            Button {
+                                onEdit()
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                            .foregroundColor(.accentColor)
+                        }
+
                         Button {
                             shareChordsheet()
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                         }
+                        .foregroundColor(.accentColor)
                     }
 
                     if horizontalSizeClass == .regular, let onDismiss = onDismiss {
@@ -180,22 +192,70 @@ struct SongDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingShareSheet) {
-            if let url = shareItem {
-                ShareSheet(items: [url])
-            }
+        .alert("Share Error", isPresented: $showingShareError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(shareErrorMessage)
         }
     }
 
     private func shareChordsheet() {
-        guard let chordLibreSong = song.chordLibreSong else { return }
+        print("📤 Share button tapped for song: \(song.title ?? "Unknown")")
+
+        guard let chordLibreSong = song.chordLibreSong else {
+            print("❌ Failed to get chordLibreSong from song")
+            shareErrorMessage = "Unable to load chordsheet data. The song may need to be edited and saved again."
+            showingShareError = true
+            return
+        }
+
+        print("✅ Got chordLibreSong, attempting export...")
 
         do {
             let url = try ChordLibreExporter.shared.exportChordsheet(chordLibreSong)
-            shareItem = url
-            showingShareSheet = true
+            print("✅ Export successful, file at: \(url.path)")
+
+            // Present activity view controller directly
+            presentActivityViewController(with: url)
+
+            print("✅ Activity view controller presented")
         } catch {
-            print("Error exporting chordsheet: \(error)")
+            print("❌ Error exporting chordsheet: \(error)")
+            shareErrorMessage = "Export failed: \(error.localizedDescription)"
+            showingShareError = true
+        }
+    }
+
+    private func presentActivityViewController(with url: URL) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            print("❌ Could not find root view controller")
+            return
+        }
+
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+
+        // For iPad: configure popover
+        if let popover = activityVC.popoverPresentationController {
+            // Find the topmost presented view controller
+            var topController = rootViewController
+            while let presented = topController.presentedViewController {
+                topController = presented
+            }
+
+            popover.sourceView = topController.view
+            popover.sourceRect = CGRect(x: topController.view.bounds.midX, y: topController.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        // Find the topmost presented view controller
+        var topController = rootViewController
+        while let presented = topController.presentedViewController {
+            topController = presented
+        }
+
+        topController.present(activityVC, animated: true) {
+            print("✅ Activity view controller presented successfully")
         }
     }
 
@@ -206,15 +266,31 @@ struct SongDetailView: View {
     }
 }
 
-// MARK: - ShareSheet
+// MARK: - ShareSheet (used by SongDetailView and SetlistDetailView)
 
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+
+        // For iPad: configure popover presentation
+        if let popover = controller.popoverPresentationController {
+            popover.sourceView = context.coordinator.sourceView
+            popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
         return controller
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator {
+        var sourceView = UIView()
+    }
 }

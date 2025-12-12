@@ -81,7 +81,7 @@ struct ChordsheetCreatorView: View {
             key: selectedKey,
             sections: [
                 ChordLibreSection(label: "Verse 1", lines: [
-                    ChordLibreLine(lyrics: "", chord: nil)
+                    ChordLibreLine(lyrics: "", chords: nil)
                 ])
             ]
         )

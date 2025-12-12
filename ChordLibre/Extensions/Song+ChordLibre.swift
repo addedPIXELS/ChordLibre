@@ -45,7 +45,12 @@ extension Song {
             do {
                 return try decoder.decode(ChordLibreSong.self, from: jsonData)
             } catch {
-                print("Error decoding ChordLibreSong: \(error)")
+                print("❌ Error decoding ChordLibreSong for song '\(title ?? "Unknown")':")
+                print("   Error: \(error)")
+                if let decodingError = error as? DecodingError {
+                    print("   Details: \(decodingError.localizedDescription)")
+                }
+                print("   JSON preview: \(jsonString.prefix(200))...")
                 return nil
             }
         }

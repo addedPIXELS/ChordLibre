@@ -64,16 +64,48 @@ struct ChordLibreSection: Codable, Equatable, Identifiable {
 
 // MARK: - Line
 
-/// Represents a single line with lyrics and an optional chord
+/// Represents a single line with lyrics and optional chords (space-separated)
 struct ChordLibreLine: Codable, Equatable, Identifiable {
     let id: UUID
     var lyrics: String
-    var chord: Chord?
+    var chords: String?  // Changed: now stores raw chord string (e.g., "C G Am")
 
-    init(id: UUID = UUID(), lyrics: String, chord: Chord? = nil) {
+    init(id: UUID = UUID(), lyrics: String, chords: String? = nil) {
         self.id = id
         self.lyrics = lyrics
-        self.chord = chord
+        self.chords = chords
+    }
+}
+
+// MARK: - ChordLibreLine Migration Logic
+
+extension ChordLibreLine {
+    enum CodingKeys: String, CodingKey {
+        case id, lyrics, chords, chord  // Include both old and new
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        lyrics = try container.decode(String.self, forKey: .lyrics)
+
+        // Try new format first, then migrate from old format
+        if let chordsString = try? container.decodeIfPresent(String.self, forKey: .chords) {
+            chords = chordsString
+        } else if let oldChord = try? container.decodeIfPresent(Chord.self, forKey: .chord) {
+            // Migration: convert old Chord object to string
+            chords = oldChord.displayString
+        } else {
+            chords = nil
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(lyrics, forKey: .lyrics)
+        try container.encodeIfPresent(chords, forKey: .chords)
+        // Don't encode old 'chord' property
     }
 }
 

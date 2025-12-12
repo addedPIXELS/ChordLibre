@@ -279,6 +279,9 @@ struct MainView: View {
                         selectedSong = song
                         isPerforming = true
                     },
+                    onEdit: song.isChordLibreSheet ? {
+                        editChordsheet(song)
+                    } : nil,
                     onDismiss: {
                         selectedSong = nil
                     }
@@ -326,7 +329,7 @@ struct MainView: View {
             key: .C,
             sections: [
                 ChordLibreSection(label: "Verse 1", lines: [
-                    ChordLibreLine(lyrics: "", chord: nil)
+                    ChordLibreLine(lyrics: "", chords: nil)
                 ])
             ]
         )
@@ -334,6 +337,16 @@ struct MainView: View {
         // Open in full-screen editor
         editingExistingSong = nil // This is a new song
         editingChordsheet = blankChordsheet
+    }
+
+    private func editChordsheet(_ song: Song) {
+        guard let chordLibreSong = song.chordLibreSong else {
+            print("Error: Unable to load ChordLibre song for editing")
+            return
+        }
+
+        editingExistingSong = song
+        editingChordsheet = chordLibreSong
     }
 }
 

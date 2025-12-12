@@ -26,6 +26,7 @@ struct ChordLibreViewer: View {
     @State private var showPreviousKeys = false
     @State private var showControls = true
     @State private var controlsTimer: Timer?
+    @State private var fontSize: CGFloat = 24  // Default to .title2 equivalent
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var dataStore: DataStore
 
@@ -159,7 +160,34 @@ struct ChordLibreViewer: View {
                             .foregroundColor(.white)
                             .shadow(radius: 2)
                     }
+                }
 
+                // Font size controls
+                HStack(spacing: 12) {
+                    Button {
+                        if fontSize > 14 { fontSize -= 2 }
+                        resetControlsTimer()
+                    } label: {
+                        Text("A-")
+                            .font(.body)
+                            .foregroundColor(fontSize <= 14 ? .gray : .white)
+                            .shadow(radius: 2)
+                    }
+                    .disabled(fontSize <= 14)
+
+                    Button {
+                        if fontSize < 40 { fontSize += 2 }
+                        resetControlsTimer()
+                    } label: {
+                        Text("A+")
+                            .font(.body)
+                            .foregroundColor(fontSize >= 40 ? .gray : .white)
+                            .shadow(radius: 2)
+                    }
+                    .disabled(fontSize >= 40)
+                }
+
+                HStack(spacing: 12) {
                     Menu {
                         Button {
                             resetTransposition()
@@ -200,8 +228,7 @@ struct ChordLibreViewer: View {
         VStack(alignment: .leading, spacing: 12) {
             // Section label
             Text(section.label)
-                .font(.title3)
-                .fontWeight(.semibold)
+                .font(.system(size: fontSize + 4, weight: .bold))
                 .foregroundColor(.yellow)
                 .padding(.bottom, 4)
 
@@ -219,15 +246,15 @@ struct ChordLibreViewer: View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             // Lyrics (left-aligned)
             Text(line.lyrics)
-                .font(.title2)
+                .font(.system(size: fontSize))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Chord (right-aligned)
-            if let chord = line.chord {
+            // Chords (right-aligned)
+            if let chords = line.chords, !chords.isEmpty {
                 Spacer(minLength: 16)
-                Text(chord.displayString)
-                    .font(.title2)
+                Text(chords)
+                    .font(.system(size: fontSize))
                     .fontWeight(.bold)
                     .foregroundColor(.cyan)
                     .padding(.leading, 8)
@@ -309,18 +336,18 @@ struct ChordLibreViewer: View {
         key: .F,
         sections: [
             ChordLibreSection(label: "Chorus", lines: [
-                ChordLibreLine(lyrics: "Feelings, nothing more than feelings", chord: try? TranspositionEngine.shared.parseChord("F")),
-                ChordLibreLine(lyrics: "Trying to forget my feelings of love", chord: try? TranspositionEngine.shared.parseChord("Fm7")),
+                ChordLibreLine(lyrics: "Feelings, nothing more than feelings", chords: "F"),
+                ChordLibreLine(lyrics: "Trying to forget my feelings of love", chords: "Fm7"),
             ]),
             ChordLibreSection(label: "Verse 1", lines: [
-                ChordLibreLine(lyrics: "Teardrops rolling down on my face", chord: try? TranspositionEngine.shared.parseChord("Bb")),
-                ChordLibreLine(lyrics: "Trying to forget my feelings of love", chord: try? TranspositionEngine.shared.parseChord("Am7")),
+                ChordLibreLine(lyrics: "Teardrops rolling down on my face", chords: "Bb"),
+                ChordLibreLine(lyrics: "Trying to forget my feelings of love", chords: "Am7"),
             ])
         ]
     )
 
     // Create a mock Song entity for preview
     // Note: This is simplified for preview purposes
-    return ChordLibreViewer(song: Song())
+    ChordLibreViewer(song: Song())
         .environmentObject(DataStore.shared)
 }
