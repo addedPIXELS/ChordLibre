@@ -26,7 +26,8 @@ struct MainView: View {
     @State private var selectedTab: NavigationTab = .all
     @State private var showingImport = false
     @State private var showingSharedImport = false
-    @State private var showingChordsheetCreator = false
+    @State private var editingChordsheet: ChordLibreSong?
+    @State private var editingExistingSong: Song?
     @State private var selectedSong: Song?
     @State private var selectedSetlist: Setlist?
     @State private var isPerforming = false
@@ -50,10 +51,6 @@ struct MainView: View {
                     .environmentObject(sharedFileManager)
             }
         }
-        .sheet(isPresented: $showingChordsheetCreator) {
-            ChordsheetCreatorView()
-                .environmentObject(dataStore)
-        }
         .onChange(of: sharedFileManager.hasNewImports) { _, hasNew in
             if hasNew {
                 showingSharedImport = true
@@ -70,6 +67,10 @@ struct MainView: View {
             } else if let setlist = selectedSetlist {
                 SetlistPerformanceView(setlist: setlist)
             }
+        }
+        .fullScreenCover(item: $editingChordsheet) { chordsheet in
+            ChordLibreEditor(song: chordsheet, existingSong: editingExistingSong)
+                .environmentObject(dataStore)
         }
     }
     
@@ -208,7 +209,7 @@ struct MainView: View {
                     }
 
                     Button {
-                        showingChordsheetCreator = true
+                        createNewChordsheet()
                     } label: {
                         Label("New Chordsheet", systemImage: "music.note.list")
                     }
@@ -275,6 +276,24 @@ struct MainView: View {
         let setlist = dataStore.createSetlist(name: "New Setlist")
         selectedTab = .setlist(setlist)
         selectedSetlist = setlist
+    }
+
+    private func createNewChordsheet() {
+        // Create a blank chordsheet with one empty section
+        let blankChordsheet = ChordLibreSong(
+            title: "Untitled",
+            artist: nil,
+            key: .C,
+            sections: [
+                ChordLibreSection(label: "Verse 1", lines: [
+                    ChordLibreLine(lyrics: "", chord: nil)
+                ])
+            ]
+        )
+
+        // Open in full-screen editor
+        editingExistingSong = nil // This is a new song
+        editingChordsheet = blankChordsheet
     }
 }
 

@@ -34,7 +34,7 @@ struct ChordLibreEditor: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Song Info") {
                     HStack {

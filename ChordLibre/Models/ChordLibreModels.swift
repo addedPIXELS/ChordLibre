@@ -22,7 +22,8 @@ import Foundation
 // MARK: - ChordLibre Song Structure
 
 /// Represents a complete ChordLibre chordsheet with sections and metadata
-struct ChordLibreSong: Codable, Equatable {
+struct ChordLibreSong: Codable, Equatable, Identifiable {
+    let id: UUID
     var title: String
     var artist: String?
     var key: MusicalKey
@@ -33,6 +34,17 @@ struct ChordLibreSong: Codable, Equatable {
 
     /// The display key for the song (same as key property for consistency)
     var displayKey: MusicalKey { key }
+
+    init(id: UUID = UUID(), title: String, artist: String? = nil, key: MusicalKey, sections: [ChordLibreSection], tempo: Int? = nil, timeSignature: String? = nil, capo: Int? = nil) {
+        self.id = id
+        self.title = title
+        self.artist = artist
+        self.key = key
+        self.sections = sections
+        self.tempo = tempo
+        self.timeSignature = timeSignature
+        self.capo = capo
+    }
 }
 
 // MARK: - Section
