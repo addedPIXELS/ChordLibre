@@ -103,23 +103,6 @@ struct ImportView: View {
                             .cornerRadius(12)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        
-                        Button {
-                            showingCamera = true
-                        } label: {
-                            VStack {
-                                Image(systemName: "camera.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.accentColor)
-                                Text("Scan")
-                                    .font(.caption)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.accentColor.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.vertical)
                     
