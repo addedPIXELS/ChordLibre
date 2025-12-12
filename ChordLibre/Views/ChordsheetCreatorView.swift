@@ -62,7 +62,10 @@ struct ChordsheetCreatorView: View {
                     .disabled(title.isEmpty)
                 }
             }
-            .sheet(isPresented: $showingEditor) {
+            .sheet(isPresented: $showingEditor, onDismiss: {
+                // After editor is dismissed (saved or cancelled), dismiss the creator
+                dismiss()
+            }) {
                 if let song = createdSong {
                     ChordLibreEditor(song: song, existingSong: nil)
                         .environmentObject(dataStore)
@@ -85,7 +88,8 @@ struct ChordsheetCreatorView: View {
 
         createdSong = newSong
         showingEditor = true
-        dismiss()
+        // Don't dismiss here - let the editor show first
+        // The creator will dismiss when the editor is dismissed (see onDismiss above)
     }
 }
 
